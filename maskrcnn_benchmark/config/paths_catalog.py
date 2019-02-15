@@ -87,6 +87,18 @@ class DatasetCatalog(object):
         "cityscapes_fine_instanceonly_seg_test_cocostyle": {
             "img_dir": "cityscapes/images",
             "ann_file": "cityscapes/annotations/instancesonly_filtered_gtFine_test.json"
+        },
+        "CLEVR_mini": {
+            "path": "CLEVR_mini/",
+            "comb_class": True
+        },
+        "CLEVR_train": {
+            "path": "./clevr/CLEVR_v1.0/",
+            "split": "train"
+        },
+        "CLEVR_val": {
+            "path": "./clevr/CLEVR_v1.0/",
+            "split": "val"
         }
     }
 
@@ -114,6 +126,30 @@ class DatasetCatalog(object):
                 factory="PascalVOCDataset",
                 args=args,
             )
+        elif "CLEVR" in name:
+            data_dir = DatasetCatalog.DATA_DIR
+            attrs = DatasetCatalog.DATASETS[name]
+            p = os.path.join(data_dir, attrs["path"])
+            if "maskrcnn" not in os.getcwd():
+                p = os.path.join("maskrcnn-benchmark", p)
+            if "mini" in name:
+                args = dict(
+                    path=p,
+                    comb_class=attrs["comb_class"],
+                )
+                return dict(
+                    factory="CLEVR_mini_segmentation",
+                    args=args,
+                )
+            else:
+                args = dict(
+                    path=p,
+                    split=attrs["split"],
+                )
+                return dict(
+                    factory="CLEVR_segmentation_test",
+                    args=args,
+                )
         raise RuntimeError("Dataset not available: {}".format(name))
 
 

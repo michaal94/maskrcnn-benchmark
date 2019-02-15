@@ -26,5 +26,7 @@ dist/
 .idea
 
 # project dirs
-/datasets
 /models
+/demo
+/output
+/sublime
