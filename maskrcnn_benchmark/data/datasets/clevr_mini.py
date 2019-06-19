@@ -55,6 +55,7 @@ class CLEVR_mini_segmentation(CLEVR_mini):
         preprocessed_file = os.path.join(
             path, 'CLEVR_mini_coco_anns') + '_detection_preprocessed.json'
         if not os.path.isfile(preprocessed_file):
+            # if you don't have file use parent's annotations
             super(CLEVR_mini_segmentation, self).__init__(path, comb_class)
             print(preprocessed_file)
             self.preprocess_dataset(preprocessed_file)

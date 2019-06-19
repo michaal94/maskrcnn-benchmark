@@ -31,6 +31,22 @@ class DatasetCatalog(object):
             "img_dir": "coco/val2014",
             "ann_file": "coco/annotations/instances_valminusminival2014.json"
         },
+        "keypoints_coco_2014_train": {
+            "img_dir": "coco/train2014",
+            "ann_file": "annotations/person_keypoints_train2014.json",
+        },
+        "keypoints_coco_2014_val": {
+            "img_dir": "coco/val2014",
+            "ann_file": "coco/annotations/instances_val2014.json"
+        },
+        "keypoints_coco_2014_minival": {
+            "img_dir": "coco/val2014",
+            "ann_file": "annotations/person_keypoints_minival2014.json",
+        },
+        "keypoints_coco_2014_valminusminival": {
+            "img_dir": "coco/val2014",
+            "ann_file": "annotations/person_keypoints_valminusminival2014.json",
+        },
         "voc_2007_train": {
             "data_dir": "voc/VOC2007",
             "split": "train"
@@ -99,6 +115,22 @@ class DatasetCatalog(object):
         "CLEVR_val": {
             "path": "./clevr/CLEVR_v1.0/",
             "split": "val"
+        },
+        "SHOP_train": {
+            "path": "shop_vqa/",
+            "split": "train"
+        },
+        "SHOP_val": {
+            "path": "shop_vqa/",
+            "split": "val"
+        },
+        "SHOP_test": {
+            "path": "shop_vqa/",
+            "split": "test"
+        },
+        "SHOP_bench": {
+            "path": "shop_vqa/",
+            "split": "benchmark"
         }
     }
 
@@ -150,6 +182,20 @@ class DatasetCatalog(object):
                     factory="CLEVR_segmentation_test",
                     args=args,
                 )
+        elif "SHOP" in name:
+            data_dir = DatasetCatalog.DATA_DIR
+            attrs = DatasetCatalog.DATASETS[name]
+            p = os.path.join(data_dir, attrs["path"])
+            if "maskrcnn" not in os.getcwd():
+                p = os.path.join("maskrcnn-benchmark", p)
+            args = dict(
+                path=p,
+                split=attrs["split"],
+            )
+            return dict(
+                factory="SHOP_VQA_mask",
+                args=args,
+            )
         raise RuntimeError("Dataset not available: {}".format(name))
 
 
@@ -163,7 +209,7 @@ class ModelCatalog(object):
         "FAIR/20171220/X-101-32x8d": "ImageNetPretrained/20171220/X-101-32x8d.pkl",
     }
 
-    C2_DETECTRON_SUFFIX = "output/train/coco_2014_train%3Acoco_2014_valminusminival/generalized_rcnn/model_final.pkl"
+    C2_DETECTRON_SUFFIX = "output/train/{}coco_2014_train%3A{}coco_2014_valminusminival/generalized_rcnn/model_final.pkl"
     C2_DETECTRON_MODELS = {
         "35857197/e2e_faster_rcnn_R-50-C4_1x": "01_33_49.iAX0mXvW",
         "35857345/e2e_faster_rcnn_R-50-FPN_1x": "01_36_30.cUF7QR7I",
@@ -173,6 +219,9 @@ class ModelCatalog(object):
         "35858933/e2e_mask_rcnn_R-50-FPN_1x": "01_48_14.DzEQe4wC",
         "35861795/e2e_mask_rcnn_R-101-FPN_1x": "02_31_37.KqyEK4tT",
         "36761843/e2e_mask_rcnn_X-101-32x8d-FPN_1x": "06_35_59.RZotkLKI",
+        "37129812/e2e_mask_rcnn_X-152-32x8d-FPN-IN5k_1.44x": "09_35_36.8pzTQKYK",
+        # keypoints
+        "37697547/e2e_keypoint_rcnn_R-50-FPN_1x": "08_42_54.kdzV35ao"
     }
 
     @staticmethod
@@ -197,7 +246,8 @@ class ModelCatalog(object):
         # prefix/<model_id>/2012_2017_baselines/<model_name>.yaml.<signature>/suffix
         # we use as identifiers in the catalog Caffe2Detectron/COCO/<model_id>/<model_name>
         prefix = ModelCatalog.S3_C2_DETECTRON_URL
-        suffix = ModelCatalog.C2_DETECTRON_SUFFIX
+        dataset_tag = "keypoints_" if "keypoint" in name else ""
+        suffix = ModelCatalog.C2_DETECTRON_SUFFIX.format(dataset_tag, dataset_tag)
         # remove identification prefix
         name = name[len("Caffe2Detectron/COCO/"):]
         # split in <model_id> and <model_name>
