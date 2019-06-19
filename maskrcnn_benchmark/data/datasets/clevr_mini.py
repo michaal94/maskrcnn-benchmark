@@ -6,8 +6,6 @@ from PIL import Image, ImageDraw
 import pycocotools.mask as mask_utils
 from maskrcnn_benchmark.structures.bounding_box import BoxList
 from maskrcnn_benchmark.structures.segmentation_mask import SegmentationMask
-import cv2
-import torchvision.transforms as transforms
 import numpy as np
 
 '''
@@ -51,7 +49,7 @@ class CLEVR_mini(data.Dataset):
 
 class CLEVR_mini_segmentation(CLEVR_mini):
     # Initialise dataset from either original file or preprocessed for detection
-    def __init__(self, path, comb_class=True, transforms=None):
+    def __init__(self, path, transforms=None, comb_class=True):
         preprocessed_file = os.path.join(
             path, 'CLEVR_mini_coco_anns') + '_detection_preprocessed.json'
         if not os.path.isfile(preprocessed_file):
@@ -126,10 +124,11 @@ class CLEVR_mini_segmentation(CLEVR_mini):
 
         for obj in objects:
             rle = obj['mask']
-            mask = mask_utils.decode(rle)
+            # mask = mask_utils.decode(rle)
             bbox = obj['bbox']
             bboxes.append(bbox)
-            masks.append(mask)
+            # masks.append(mask)
+            masks.append(rle)
             if self.comb_class:
                 classes.append(self.prop_to_id[(obj['color'], obj['material'], obj['shape'])])
             else:
@@ -138,7 +137,7 @@ class CLEVR_mini_segmentation(CLEVR_mini):
         bboxes = torch.as_tensor(bboxes).reshape(-1, 4)
         target = BoxList(bboxes, size_tup, mode='xyxy')
 
-        masks = SegmentationMask(masks, size_tup)
+        masks = SegmentationMask(masks, size_tup, mode='mask')
         target.add_field('masks', masks)
 
         classes = torch.tensor(classes)
@@ -173,7 +172,7 @@ class CLEVR_mini_segmentation(CLEVR_mini):
 
 class CLEVR_mini_segmentation_inference(CLEVR_mini_segmentation):
     # Initialise dataset from either original file or preprocessed for detection
-    def __init__(self, path, transforms=None):
+    def __init__(self, path, transforms):
         file = os.path.join(
             path, 'CLEVR_mini_coco_anns') + '_detection_inference.json'
 
@@ -205,10 +204,10 @@ class CLEVR_mini_segmentation_inference(CLEVR_mini_segmentation):
 
         for obj in objects:
             rle = obj['mask']
-            mask = mask_utils.decode(rle)
+            # mask = mask_utils.decode(rle)
             bbox = obj['bbox']
             bboxes.append(bbox)
-            masks.append(mask)
+            masks.append(rle)
             classes.append(obj['label'])
 
         bboxes = torch.as_tensor(bboxes).reshape(-1, 4)
@@ -226,85 +225,6 @@ class CLEVR_mini_segmentation_inference(CLEVR_mini_segmentation):
             image, target = self.transforms(image, target)
 
         return image, target, idx
-
-
-class CLEVR_mini_attr(data.Dataset):
-    # Initialise dataset from either original file or preprocessed for detection
-    def __init__(self, path, transform_list=[], split='train'):
-
-        file = os.path.join(
-            path, 'CLEVR_mini_coco_anns') + '_attributes.json'
-
-        assert os.path.isfile(file)
-
-        with open(file) as f:
-            annotations = json.load(f)
-
-        self.images_dir = os.path.join(path, 'images')
-
-        if split == 'train':
-            self.annotations = [a for a in annotations if a['image_idx'] < 3500]
-        else:
-            self.annotations = [a for a in annotations if a['image_idx'] >= 3500]
-
-        self.transform_list = [transforms.ToPILImage(),
-                               transforms.Resize((149, 224)),
-                               transforms.ToTensor(),
-                               transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])]
-        self.transform_list = self.transform_list + transform_list
-
-    def __getitem__(self, idx):
-        ann = self.annotations[idx]
-        image_file = os.path.join(self.images_dir, ann['image_filename'])
-        img = cv2.imread(image_file, cv2.IMREAD_COLOR)
-        img = transforms.Compose([transforms.ToTensor()])(img)
-
-        if ann['feat_vec'] is not None:
-            label = torch.Tensor(ann['feat_vec'])
-
-        mask = torch.Tensor(mask_utils.decode(ann['mask']))
-
-        segm = img.clone()
-
-        for i in range(3):
-            segm[i, :, :] = img[i, :, :] * mask.float()
-
-        img = transforms.Compose(self.transform_list)(img)
-        segm = transforms.Compose(self.transform_list)(segm)
-
-        data = img.clone().resize_(6, 224, 224).fill_(0)
-        data[0:3, 38:187, :] = img
-        data[3:6, 38:187, :] = segm
-
-        return data, label
-
-    def __len__(self):
-        return len(self.annotations)
-
-    def show_item(self, idx):
-        ann = self.annotations[idx]
-        image_file = os.path.join(self.images_dir, ann['image_filename'])
-        img = cv2.imread(image_file, cv2.IMREAD_COLOR)
-        img = transforms.Compose([transforms.ToTensor()])(img)
-
-        if ann['feat_vec'] is not None:
-            label = torch.Tensor(ann['feat_vec'])
-
-        mask = torch.Tensor(mask_utils.decode(ann['mask']))
-
-        segm = img.clone()
-
-        for i in range(3):
-            segm[i, :, :] = img[i, :, :] * mask.float()
-
-        img = transforms.Compose([transforms.ToPILImage()])(img)
-        segm = transforms.Compose([transforms.ToPILImage()])(segm)
-
-        w, h = img.size
-        image_show = Image.new("RGB", (2 * w, h))
-        image_show.paste(img)
-        image_show.paste(segm, (w, 0))
-        image_show.show()
 
 
 def mask_to_bbox(mask, img_size):

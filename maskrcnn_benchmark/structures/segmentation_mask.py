@@ -2,21 +2,14 @@ import cv2
 import copy
 import torch
 import numpy as np
-<<<<<<< HEAD
-from torch.nn.functional import interpolate
-=======
 from maskrcnn_benchmark.layers.misc import interpolate
 from maskrcnn_benchmark.utils import cv2_util
->>>>>>> upstream/master
 import pycocotools.mask as mask_utils
 
 # transpose
 FLIP_LEFT_RIGHT = 0
 FLIP_TOP_BOTTOM = 1
 
-<<<<<<< HEAD
-class Mask(object):
-=======
 
 """ ABSTRACT
 Segmentations come in either:
@@ -38,85 +31,9 @@ and PolygonList to make it transparent.
 
 
 class BinaryMaskList(object):
->>>>>>> upstream/master
     """
     This class handles binary masks for all objects in the image
     """
-<<<<<<< HEAD
-    def __init__(self, segm, size, mode):
-        width, height = size
-        if isinstance(segm, Mask):
-            mask = segm.mask
-        else:
-            if type(segm) == list:
-                # polygons
-                mask = Polygons(segm, size, 'polygon').convert('mask').to(dtype=torch.float32)
-            elif type(segm) == dict and 'counts' in segm:
-                if type(segm['counts']) == list:
-                    # uncompressed RLE
-                    h, w = segm['size']
-                    rle = mask_utils.frPyObjects(segm, h, w)
-                    mask = mask_utils.decode(rle)
-                    mask = torch.from_numpy(mask).to(dtype=torch.float32)
-                else:
-                    # compressed RLE
-                    mask = mask_utils.decode(segm)
-                    mask = torch.from_numpy(mask).to(dtype=torch.float32)
-            else:
-                # binary mask
-                if type(segm) == np.ndarray:
-                    mask = torch.from_numpy(segm).to(dtype=torch.float32)
-                else: # torch.Tensor
-                    mask = segm.to(dtype=torch.float32)
-        self.mask = mask
-        self.size = size
-        self.mode = mode
-
-    def transpose(self, method):
-        if method not in (FLIP_LEFT_RIGHT, FLIP_TOP_BOTTOM):
-            raise NotImplementedError("Only FLIP_LEFT_RIGHT and FLIP_TOP_BOTTOM implemented")
-
-        width, height = self.size
-        if method == FLIP_LEFT_RIGHT:
-            max_idx = width
-            dim = 1
-        elif method == FLIP_TOP_BOTTOM:
-            max_idx = height
-            dim = 0
-
-        flip_idx = torch.tensor(list(range(max_idx)[::-1]))
-        flipped_mask = self.mask.index_select(dim, flip_idx)
-        return Mask(flipped_mask, self.size, self.mode)
-
-    def crop(self, box):
-        box = [int(b) for b in box]
-        w, h = box[2] - box[0], box[3] - box[1]
-        w = max(w, 1)
-        h = max(h, 1)
-        cropped_mask = self.mask[box[1]: box[3], box[0]: box[2]]
-        return Mask(cropped_mask, size=(w, h), mode=self.mode)
-
-    def resize(self, size, *args, **kwargs):
-        width, height = size
-        scaled_mask = interpolate(self.mask[None, None, :, :], (height, width), mode='nearest')[0, 0]
-        return Mask(scaled_mask, size=size, mode=self.mode)
-
-    def convert(self, mode):
-        mask = self.mask.to(dtype=torch.uint8)
-        return mask
-
-    def __iter__(self):
-        return iter(self.mask)
-
-    def __repr__(self):
-        s = self.__class__.__name__ + "("
-        # s += "num_mask={}, ".format(len(self.mask))
-        s += "image_width={}, ".format(self.size[0])
-        s += "image_height={}, ".format(self.size[1])
-        s += "mode={})".format(self.mode)
-        return s
-
-=======
 
     def __init__(self, masks, size):
         """
@@ -284,7 +201,6 @@ class BinaryMaskList(object):
         s += "image_width={}, ".format(self.size[0])
         s += "image_height={})".format(self.size[1])
         return s
->>>>>>> upstream/master
 
 
 class PolygonInstance(object):
@@ -432,30 +348,6 @@ class PolygonList(object):
     This class handles PolygonInstances for all objects in the image
     """
 
-<<<<<<< HEAD
-    def __init__(self, segms, size, mode=None):
-        """
-        Arguments:
-            segms: three types
-                (1) polygons: a list of list of lists of numbers. The first
-                level of the list correspond to individual instances,
-                the second level to all the polygons that compose the
-                object, and the third level to the polygon coordinates.
-                (2) rles: COCO's run length encoding format, uncompressed or compressed
-                (3) binary masks
-            size: (width, height)
-            mode: 'polygon', 'mask'. if mode is 'mask', convert mask of any format to binary mask
-        """
-        assert isinstance(segms, list)
-        if type(segms[0]) != list:
-            mode = 'mask'
-        if mode == 'mask':
-            self.masks = [Mask(m, size, mode) for m in segms]
-        else: # polygons
-            self.masks = [Polygons(p, size, mode) for p in segms]
-        self.size = size
-        self.mode = mode
-=======
     def __init__(self, polygons, size):
         """
         Arguments:
@@ -507,7 +399,6 @@ class PolygonList(object):
                 self.polygons.append(p)
 
         self.size = tuple(size)
->>>>>>> upstream/master
 
     def transpose(self, method):
         if method not in (FLIP_LEFT_RIGHT, FLIP_TOP_BOTTOM):
@@ -515,25 +406,6 @@ class PolygonList(object):
                 "Only FLIP_LEFT_RIGHT and FLIP_TOP_BOTTOM implemented"
             )
 
-<<<<<<< HEAD
-        flipped = []
-        for mask in self.masks:
-            flipped.append(mask.transpose(method))
-        return SegmentationMask(flipped, size=self.size, mode=self.mode)
-
-    def crop(self, box):
-        w, h = box[2] - box[0], box[3] - box[1]
-        cropped = []
-        for mask in self.masks:
-            cropped.append(mask.crop(box))
-        return SegmentationMask(cropped, size=(w, h), mode=self.mode)
-
-    def resize(self, size, *args, **kwargs):
-        scaled = []
-        for mask in self.masks:
-            scaled.append(mask.resize(size, *args, **kwargs))
-        return SegmentationMask(scaled, size=size, mode=self.mode)
-=======
         flipped_polygons = []
         for polygon in self.polygons:
             flipped_polygons.append(polygon.transpose(method))
@@ -556,7 +428,6 @@ class PolygonList(object):
 
         resized_size = size
         return PolygonList(resized_polygons, resized_size)
->>>>>>> upstream/master
 
     def to(self, *args, **kwargs):
         return self
@@ -576,37 +447,27 @@ class PolygonList(object):
         return len(self.polygons)
 
     def __getitem__(self, item):
-<<<<<<< HEAD
-        if isinstance(item, (int, slice)):
-            selected_masks = [self.masks[item]]
-=======
         if isinstance(item, int):
             selected_polygons = [self.polygons[item]]
         elif isinstance(item, slice):
             selected_polygons = self.polygons[item]
->>>>>>> upstream/master
         else:
             # advanced indexing on a single dimension
-            selected_masks = []
+            selected_polygons = []
             if isinstance(item, torch.Tensor) and item.dtype == torch.uint8:
                 item = item.nonzero()
                 item = item.squeeze(1) if item.numel() > 0 else item
                 item = item.tolist()
             for i in item:
-<<<<<<< HEAD
-                selected_masks.append(self.masks[i])
-        return SegmentationMask(selected_masks, size=self.size, mode=self.mode)
-=======
                 selected_polygons.append(self.polygons[i])
         return PolygonList(selected_polygons, size=self.size)
->>>>>>> upstream/master
 
     def __iter__(self):
-        return iter(self.masks)
+        return iter(self.polygons)
 
     def __repr__(self):
         s = self.__class__.__name__ + "("
-        s += "num_instances={}, ".format(len(self.masks))
+        s += "num_instances={}, ".format(len(self.polygons))
         s += "image_width={}, ".format(self.size[0])
         s += "image_height={})".format(self.size[1])
         return s

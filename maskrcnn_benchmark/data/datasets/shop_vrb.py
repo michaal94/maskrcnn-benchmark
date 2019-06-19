@@ -103,16 +103,16 @@ class SHOP_VRB_mask(SHOP_VRB):
 
         for obj in objects:
             rle = obj['mask']
-            mask = mask_utils.decode(rle)
+            # mask = mask_utils.decode(rle)
             bbox = obj['bbox']
             bboxes.append(bbox)
-            masks.append(mask)
+            masks.append(rle)
             classes.append(self.name_to_id[obj['name']])
 
         bboxes = torch.as_tensor(bboxes).reshape(-1, 4)
         target = BoxList(bboxes, size_tup, mode='xyxy')
 
-        masks = SegmentationMask(masks, size_tup)
+        masks = SegmentationMask(masks, size_tup, mode='mask')
         target.add_field('masks', masks)
 
         classes = torch.tensor(classes)
