@@ -104,6 +104,7 @@ class DatasetCatalog(object):
             "img_dir": "cityscapes/images",
             "ann_file": "cityscapes/annotations/instancesonly_filtered_gtFine_test.json"
         },
+        # CLEVR ns-vqa article datasets/splits
         "CLEVR_mini": {
             "path": "CLEVR_mini/",
             "comb_class": True
@@ -116,20 +117,21 @@ class DatasetCatalog(object):
             "path": "./clevr/CLEVR_v1.0/",
             "split": "val"
         },
+        # SHOP-VRB paths
         "SHOP_train": {
-            "path": "shop_vqa/",
+            "path": "shop_vrb/",
             "split": "train"
         },
         "SHOP_val": {
-            "path": "shop_vqa/",
+            "path": "shop_vrb/",
             "split": "val"
         },
         "SHOP_test": {
-            "path": "shop_vqa/",
+            "path": "shop_vrb/",
             "split": "test"
         },
         "SHOP_bench": {
-            "path": "shop_vqa/",
+            "path": "shop_vrb/",
             "split": "benchmark"
         }
     }
@@ -193,7 +195,7 @@ class DatasetCatalog(object):
                 split=attrs["split"],
             )
             return dict(
-                factory="SHOP_VQA_mask",
+                factory="SHOP_VRB_mask",
                 args=args,
             )
         raise RuntimeError("Dataset not available: {}".format(name))

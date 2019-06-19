@@ -84,7 +84,7 @@ class CLEVR_mini_segmentation(CLEVR_mini):
         self.transforms = transforms
         # Just a list of some RGB colors, add more if you have more classes
         self.color_map = [(np.random.randint(0, 255), np.random.randint(0, 255), np.random.randint(0, 255))
-                          for i in range(len(self.prop_to_id)+1)]
+                          for i in range(len(self.prop_to_id) + 1)]
 
     # Preprocess dataset only for idxs, filenames, labels, boxes, masks
     def preprocess_dataset(self, path_to_save):
